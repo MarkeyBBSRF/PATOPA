@@ -1,4 +1,7 @@
-##########generate pathwaylist######
+#' convert the pathway/genesets dataframe groupgene to a list.
+#'
+#' @param groupgene A dataframe which has two columns, the first column is the name of pathways/genesets, the second column is genes included in the pathways/genesets.
+#' @return A list, the name of each elements is the name of pathways/genesets, the vectors are genes included in the pathways/genesets.
 pathwaylist.fun=function(groupgene){
     pathway=unique(groupgene[,1])
     pathwaylist=list()
@@ -9,7 +12,11 @@ pathwaylist.fun=function(groupgene){
     return(pathwaylist)
 }
 
-###########redefine geneset######
+#' Redefine gene sets which has no overlap with each other according to the set relationship.
+#'
+#' @param drvier.database A list which contains the pathway database.
+#' @param mutated.genes A vector which contains all mutated genes.
+#' @return A list which contains the redefined gene sets which has no overlap with each other. The name of each elements is the name of pathways/genesets, the vectors are genes included in the pathways/genesets.
 
 
 redefine.geneset.fun2=function(driver.database,mutated.genes){
@@ -36,21 +43,16 @@ redefine.geneset.fun2=function(driver.database,mutated.genes){
         pathway.per.genesets=sapply(1:length(unique.score),function(i) driver.geneset[which(pathway.per.genesets.index[i,]==1)])
         names(genes.per.genesets)=sapply(1:length(pathway.per.genesets), function(i) paste(pathway.per.genesets[[i]],collapse = ","))
     }
-    #  }else{
-    #    for(i in 1:2^no.dri){
-    
-    #    }
-    #  }
     return(genes.per.genesets)
 }
 
 
-
-
-
-
-###generate mut table (and probability score) for redefined geneset###
-
+#' Generate a list contains mutation table and functional impact score list according to redefined.geneset.
+#'
+#' @param  Eventtable A dataframe which contains three columns. The first column is the sample names, the second column is the mutated genes and the third column is the functional impact score corresponding to each mutations.
+#' @param mutated.genes A vector which contains all mutated genes.
+#' @param scorelist_TF A Boolean values indicate whether the functional impact information is included.
+#' @return A list which contains mutation table and functional impact score list according to redefined.geneset.
 
 
 mut.table.fun=function(Eventtable,redefined.geneset,scorelist_TF){
@@ -59,11 +61,6 @@ mut.table.fun=function(Eventtable,redefined.geneset,scorelist_TF){
     }
     
     samples=unique(Eventtable[,1])
-    
-    
-    #  samples.id=sample(1:length(samples),50)
-    #  samples=samples[samples.id]
-    
     mut.table=matrix(0,nrow=length(samples),ncol=length(redefined.geneset))
     score.list=vector(mode="list",length=length(samples))
     row.names(mut.table)=samples
@@ -90,7 +87,12 @@ mut.table.fun=function(Eventtable,redefined.geneset,scorelist_TF){
     return(result)
 }
 
-####Caculate the probility of order of two pathways###
+#' Function used to extract P(A<B), P(A>B) and P(A=B) from the probability matrix abtained from order_estimate.R.
+#'
+#' @param  sort.geneset list of pathways analyzed.
+#' @param  mle.result A matrix indicate the probabilities of each pathways/genesets mutated as the k-th mutational event, which is the output of order_estimate.R.
+#' @return A matrix contains P(A<B), P(A>B) and P(A=B) for all pathways analyzed
+
 pair.order.prob.fun=function(sort.geneset,mle.result){
     a=mle.result
     no.dri=length(sort.geneset)
@@ -99,7 +101,6 @@ pair.order.prob.fun=function(sort.geneset,mle.result){
     colnames(order.prob)=c("A","B","P(A=B)","P(A<B)","P(A>B)")
     no.dri=length(sort.geneset)
     geneset.names=strsplit(row.names(mle.result),split=",")
-    #  geneset.names=row.names(mle.result)
     index=0
     
     
@@ -134,92 +135,13 @@ pair.order.prob.fun=function(sort.geneset,mle.result){
     return(order.prob)
 }
 
-###caculate the score of each pathway###
-#order.score.fun=function(order.prob.pair,driver.geneset){
-#  no.dri=length(driver.geneset)
-#  order.score=rep(NA,no.dri)
-#  names(order.score)=driver.geneset
-#  for(i in 1:no.dri){
-#    order.score[i]=sum(order.prob.pair[which(order.prob.pair[,1]==driver.geneset[i]),4])+sum(order.prob.pair[which(order.prob.pair[,2]==driver.geneset[i]),5])#-sum(order.prob.pair[which(order.prob.pair[,1]==driver.geneset[i]),5])-sum(order.prob.pair[which(order.prob.pair[,2]==driver.geneset[i]),4])
-#  }
-#  sort.geneset=names(sort(order.score,decreasing = TRUE))
-#}
 
-#prob4heatmap.fun=function(order.prob,sort.geneset) {
-#  no.dri=length(sort.geneset)
-#  order.prob.heatmap=matrix(NA,no.dri,no.dri)###prob for heatmap
-#  colnames(order.prob.heatmap)=sort.geneset
-#  rownames(order.prob.heatmap)=sort.geneset
-#   for(i in 1:(no.dri-1)){
-#    for(j in (i+1):no.dri){
-#      index1=which((order.prob[,1]==sort.geneset[i]) & (order.prob[,2]==sort.geneset[j]))
-#      if(length(index1)==1){
-#        order.prob.heatmap[i,j]=order.prob[index1,4]
-#        order.prob.heatmap[j,i]=order.prob[index1,5]
-#      }else{
-#        index2=which((order.prob[,2]==sort.geneset[i]) & (order.prob[,1]==sort.geneset[j]))
-#        order.prob.heatmap[i,j]=order.prob[index2,5]
-#        order.prob.heatmap[j,i]=order.prob[index2,4]
-#      }
-#    }
-#  }
-#  return(order.prob.heatmap)
-#}
+#' Function used to do generate the list of functional impact scores for all mutations in each redefined mutually exclusive genesets
+#'
+#' @param genesets The list of the redefined mutually exclusive genesets
+#' @param Eventtable A dataframe which contains three columns. The first column is the sample names, the second column is the mutated genes and the third column is the functional impact score corresponding to each mutations.
+#' @return The list of functional impact scores for all mutations in each genesets
 
-
-#######function for simulation######
-# simulate.mut.table=function(mut.table,sample.size,mle.result){ #generate simulation table for a given sample size
-#   no.mut.sample=apply(mut.table,1,sum)
-#   no.sample=length(no.mut.sample)
-#   no.genesets=nrow(prob)
-#   simu.sample.index=sample(1:no.sample,sample.size,replace = T)
-#   simu.no.mut=no.mut.sample[simu.sample.index]
-#   mut.table=matrix(0,nrow=sample.size,ncol=no.genesets)
-#   colnames(mut.table)=rownames(mle.result)
-#   for(i in 1:sample.size){
-#     for(j in 1:simu.no.mut[i]){
-#       simu.genesets=sample(1:no.gensets,1,prob=mle.result[,j])
-#       mut.table[i,simu.genesets] = mut.table[i,simu.genesets]+1
-#     }
-#   }
-#   return(mut.table)
-# }
-#
-# simu.pairprob.fun=function(repeats,MAX,mle.result,no.mut.sample,sample.size,no.dri){
-#   a=mle.result
-#   simu.mle=array(NA,c(nrow(a),MAX+1,repeats))
-#   simu.pair.prob=array(NA,c(no.dri*(no.dri-1)/2,3,repeats))
-#
-#   for(i in 1:repeats){
-#     simu.mut.table=simulate.mut.table(no.mut.sample,sample.size, a)
-#     simu.mle[,,i]=order_estimate(simu.mut.table,N,parallel)[,1:5]
-#     simu.pair.prob[,,i]=as.matrix(pair.order.prob.fun(sort.geneset,simu.mle[,,i]))
-# #    print(i)
-#   }
-#    result=simu.mle
-# #  simu.mle.mean=apply(simu.mle,c(1,2),mean)
-# #  distance1=apply(abs(simu.mle.mean-a),2,mean)
-# #  simu.pair.prob.mean=apply(simu.pair.prob,c(1,2),mean)
-# #  pair.prob.true=as.matrix(pair.order.prob.fun(sort.geneset,a))
-# #  distance2=abs(pair.prob.true-simu.pair.prob.mean)
-# #  result=list(mle=simu.mle,distance1=distance1,distance2=distance2)
-# #  return(result)
-# }
-
-##############id2name
-#id2name.fun=function(id){
-#  name=rep(NA,length(id))
-#  for(i in 1:length(id)){
-#    if(length(which(names(EntrezID2Name)==id[i]))==1){
-#      index=which(names(EntrezID2Name)==id[i])
-#      name[i]=EntrezID2Name[index]
-#    }
-#  }
-#  return(name)
-#}
-
-
-####function for simulation for score####
 generate.event.score=function(genesets,Eventtable) {
     event.score.list=list()
     index.list=sapply(1:length(genesets),function(i) which(Eventtable[,2]%in%genesets[[i]]))
@@ -229,6 +151,7 @@ generate.event.score=function(genesets,Eventtable) {
     return(event.score.list)
 }
 
+#########Generate simulated mutations table and functional impact score list###########
 simulate.mut.table=function(mut.table,score.list,mle.result,samplesize,event.score.list,prob.nondam){
     no.gene=ncol(mut.table)
     index=sample(1:nrow(mut.table),samplesize,replace = T)
@@ -272,6 +195,23 @@ simulate.mut.table=function(mut.table,score.list,mle.result,samplesize,event.sco
     }
     simu=list(simu.mut.table=simu.mut.table,simu.score.list=simu.score.list)
 }
+
+#' Function used to do simulations for a specified sample size for a pair of pathways.
+#'
+#' @param repeats Number of repeats in the simulation.
+#' @param MAX Assume the same distribution after MAX events
+#' @param mut.table Original mutation table
+#' @param score.list Original list of functional impact score
+#' @param mle.result The MLE of probability matrix for the pair of pathways
+#' @param event.score.list The list of functional impact scores for all mutations in each redefined mutually exclusive genesets
+#' @param samplesize The number of simulated samples in one simulation
+#' @param genesets The list of the redefined mutually exclusive genesets
+#' @param Eventtable A dataframe which contains three columns. The first column is the sample names, the second column is the mutated genes and the third column is the functional impact score corresponding to each mutations.
+#' @param no.dri Number of pathways being analyzed
+#' @param cutoff A number indicate the cutoff value of functional impact score for treating an mutations as determinated functional/non-functional. For example, a cutoff value of 0.05 means that all impact scores which are less than 0.05 will be set as 0 and all scores greater than 0.95 will be set as 1.The default value for this parameter is 0.
+#' @param max_unfix A number indicate the maximum value of undeterminated mutations.
+#' @param prob.nondam The probabilities that a random non-functional mutations occurs in each pathways/datasets. The probabilites was estimated using function probnon.R
+#' @return The mean distances of probabilities of estimated values of P(A<B), P(A>B) and P(A=B) from true values
 
 simu.pairprob.fun=function(repeats,MAX,mut.table,score.list,mle.result,event.score.list,samplesize,genesets,Eventtable,no.dri=2,cutoff,max_unfix,prob.nondam){
     a=mle.result
@@ -317,21 +257,12 @@ changescore=function(Eventtable,driver.database,changeset,change){
 }
 
 
-########function for individual prediction#######
+#' Function to caculate the probabilities of a random non-functional mutations occurs in each pathways/datasets.
+#'
+#' @param Y The mutation table for each sample in each pathways.
+#' @param prob The list of functional impact score for each mutations.
+#' @return The list of functional impact scores for all mutations in each redefined mutually exclusive genesets
 
-#AllPesti is the estimated probability matrix of the ith mutation occurs in A,B or A intersect B, Yj is the observated mutation in the jth individual, prob is the function impact score for the individual.#
-# predict <- function(Yj,AllPesti,a,prob,MAX)  
-# {
-#     storage.mode(AllPesti) <- "double"
-#     storage.mode(Yj) <- "integer"
-#     storage.mode(prob) <- "double"
-#     for (i in 1:length(a))
-#     storage.mode(a[[i]]) <- "integer"
-#     storage.mode(MAX) <- "integer"
-#     .Call("predict", Yj,AllPesti,a,prob,MAX)
-# }
-
-###################################################
 probnon <- function(Y,prob){
   storage.mode(Y) <- "integer"
   for (i in 1:length(prob))
@@ -359,47 +290,7 @@ loglik <- function( xx, AllPtrue, division, sel, Y, a, prob,aa,prob_nondammut)
     .Call("loglik", xx, AllPtrue, divsel, Y, a, MAX, prob,prob_nondammut)
 }
 
-#gradient <- function ( xx, AllPtrue, division, sel, Y, a,prob,aa)
-#{
-#    storage.mode(xx) <- "double"
-#    storage.mode(AllPtrue) <- "double"
-#    for (i in 1:length(division))
-#        storage.mode(division[[i]]) <- "integer"
-#    storage.mode(sel) <- "integer"
-#      storage.mode(Y) <- "integer"
-#    for (i in 1:length(a))
-#        storage.mode(a[[i]]) <- "integer"
-#    for (i in 1:length(aa))
-#        storage.mode(aa[[i]]) <- "integer"
-#    for (i in 1:length(prob))
-#      storage.mode(prob[[i]]) <- "double"
-#    storage.mode(MAX) <- "integer"
-#    divsel=division[[sel]]
-#    storage.mode(divsel) <- "integer"
-#    .Call("gradient", xx, AllPtrue, divsel, Y, a,MAX, prob ,aa)
-#}
-
-
-#hin <- function(x,AllP,division,sel,Y,a,prob,aa)     # a vector function specifying inequality constraints such that hin[j] > 0 for all j
-#{                                                # used in the constrained optimization function auglag
-#    return(c(x,1-sum(x)))
-#}
-
-#hin.jac <- function(x,AllP,division,sel,Y,a,prob,aa)   # Jacobian of hin, used in the constrained optimization function auglag
-#{
-#    return(rbind(diag(length(x)),rep(-1,length(x))))
-#}
-
-#subloglik <- function(P,N,a)
-#{
-#    temp <- rep(1,nrow(a[[N]]))
-#    for(j in 1:ncol(a[[N]]))
-#        temp <- temp*P[a[[N]][,j],j]
-
-#    return(log(sum(temp)))
-#}
-
-
+#######main.function#########
 
 main.function <- function(Y,a,aa,prob,cutoff,max_unfix)  #old Y#
 {
@@ -430,22 +321,6 @@ main.function <- function(Y,a,aa,prob,cutoff,max_unfix)  #old Y#
     division <- vector("list",nparam)
     for(i in 1:(nparam-1)) division[[i]] <- i
     division[[nparam]] <- nparam:max.dmut
-
-#########generate causal list , new Y list, pweight list#########
- #   causal.list<-sapply(apply(Y,1,sum),generate.causal.fun)
-    
- #   newY<-vector("list",length(causal.list))
-#    for( i in 1:length(causal.list)){
-#      mut.matr=generate.mut.matr(Y[i,],causal.list[[i]])
-#      newY[[i]]<-mut.matr
-#    }    
-    
-#    pweight<-vector("list",length(causal.list))
-#    for(i in 1:length(causal.list)){
-#      pweight[[i]]=calc.p_weight(score.list[[i]],causal.list[[i]],Y[i,])
-#    }
-
-###############################################################
 
     AllPtrue <- matrix(0,nr=no.gene,nc=max.dmut)
 
@@ -567,6 +442,15 @@ for(N in 2:MAX.mut)
 return(a)
 }
 
+#' Function used to estimate the mutation probability matrix.
+#'
+#' @param sample.gene.mutation A mutation table, each row represents a sample and each column represents a pathway/geneset.The value is the number of mutations in the corresponding samples in each pathway/geneset.
+#' @param N The number of times that the optimization with different inital values is repeated.
+#' @param parallel A Boolean value indicate whether parallel computing is to be used.
+#' @param score.list A list contains the functional impact scores for each mutations in each sample.
+#' @param cutoff A number indicate the cutoff value of functional impact score for treating an mutations as determinated functional/non-functional. For example, a cutoff value of 0.05 means that all impact scores which are less than 0.05 will be set as 0 and all scores greater than 0.95 will be set as 1.The default value for this parameter is 0.
+#' @param max_unfix A number indicate the maximum value of undeterminated mutations.
+#' @return A matrix which indicate the probabilities of each pathways/genesets mutated as the k-th mutational event.
 
 
 order_estimate <- function(sample.gene.mutation,N,parallel,score.list,cutoff=0,max_unfix=0)
@@ -653,9 +537,9 @@ calc.p_weight=function(score,causal.matrix,origin.mut){
   return(p)
 }
 
-#prob_nondam=function(prob,MAX){
-#  for(i in (MAX+1):length(prob)){
-#    prob[i]=prob[MAX]
-#  }
-#  return(prob)
-#}
+prob_nondam=function(prob,MAX){
+  for(i in (MAX+1):length(prob)){
+    prob[i]=prob[MAX]
+  }
+  return(prob)
+}
